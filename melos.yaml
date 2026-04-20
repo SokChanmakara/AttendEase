@@ -1,0 +1,3 @@
+name: attendease_mobile
+packages:
+  - packages/mobile

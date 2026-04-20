@@ -1,0 +1,71 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAuthed() {
+      return request.auth != null;
+    }
+
+    function role() {
+      return isAuthed() ? request.auth.token.role : null;
+    }
+
+    function isAdmin() {
+      return role() == 'admin';
+    }
+
+    match /users/{uid} {
+      allow read: if isAuthed() && (request.auth.uid == uid || isAdmin());
+      allow update: if isAuthed() && request.auth.uid == uid;
+      allow create, delete: if isAdmin();
+
+      match /notifications/{notifId} {
+        allow read, write: if isAuthed() && request.auth.uid == uid;
+      }
+
+      match /tokens/{tokenId} {
+        allow read, write: if isAuthed() && request.auth.uid == uid;
+      }
+
+      match /leave_balances/{balanceId} {
+        allow read: if isAuthed() && (request.auth.uid == uid || isAdmin());
+        allow write: if isAdmin();
+      }
+    }
+
+    match /companies/{companyId} {
+      allow read: if isAuthed();
+      allow write: if isAdmin();
+
+      match /attendance/{recordId} {
+        allow read: if isAuthed();
+        allow write: if false;
+      }
+
+      match /qr_scan_log/{logId} {
+        allow read: if isAdmin();
+        allow write: if false;
+      }
+
+      match /audit_log/{logId} {
+        allow read: if isAdmin();
+        allow write: if false;
+      }
+
+      match /notification_log/{logId} {
+        allow read: if isAdmin();
+        allow write: if false;
+      }
+
+      match /leave_requests/{requestId} {
+        allow read: if isAuthed();
+        allow create: if role() in ['employee', 'manager', 'admin'];
+        allow update: if role() in ['manager', 'admin'];
+      }
+
+      match /{document=**} {
+        allow read: if isAuthed();
+        allow write: if isAdmin();
+      }
+    }
+  }
+}

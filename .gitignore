@@ -1,0 +1,24 @@
+# Node
+node_modules/
+.pnpm-store/
+
+# Firebase
+.firebase/
+.firebaserc.local
+
+# Build outputs
+**/.nuxt/
+**/.output/
+**/dist/
+**/lib/
+
+# Flutter
+**/.dart_tool/
+**/build/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+
+# Env
+*.env
+*.env.*
+!.env.example
