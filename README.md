@@ -27,6 +27,27 @@ From repo root:
 3. Deploy from `packages/firebase`:
    - `firebase deploy --only firestore:rules,storage,functions`
 
+## Web admin Firebase env
+
+Set these env vars before running `npm run dev:web`:
+
+- `NUXT_PUBLIC_FIREBASE_API_KEY`
+- `NUXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
+- `NUXT_PUBLIC_FIREBASE_PROJECT_ID`
+- `NUXT_PUBLIC_FIREBASE_APP_ID`
+- `NUXT_PUBLIC_FIREBASE_FUNCTIONS_REGION` (optional, defaults to `us-central1`)
+
+Quick setup:
+
+1. Copy [packages/web-admin/.env.example](packages/web-admin/.env.example) to `packages/web-admin/.env`
+2. Fill values from Firebase Console → Project settings → Your apps (Web app)
+3. Restart `npm run dev:web`
+
+The admin home page includes:
+
+- email/password admin sign-in
+- callable trigger for QR force rotation (`forceRotateQrToken`)
+
 ## Auth claims bootstrap + initial seed
 
 Before running bootstrap commands, authenticate with Firebase Admin credentials (for example by setting `GOOGLE_APPLICATION_CREDENTIALS`).

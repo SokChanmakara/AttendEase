@@ -114,6 +114,67 @@ function weekdayInTimezone(date: Date, timeZone: string): string {
     return new Intl.DateTimeFormat('en-US', { timeZone, weekday: 'short' }).format(date).toLowerCase();
 }
 
+async function notifyAdminsMockLocationAttempt(params: {
+    companyId: string;
+    userId: string;
+    locationId: string;
+}): Promise<void> {
+    const { companyId, userId, locationId } = params;
+
+    const adminsSnap = await db
+        .collection('users')
+        .where('company_id', '==', companyId)
+        .where('role', '==', 'admin')
+        .where('is_active', '==', true)
+        .get();
+
+    if (adminsSnap.empty) return;
+
+    const title = 'Mock location blocked';
+    const body = `User ${userId} attempted check-in with a mock location at ${locationId}.`;
+
+    const tokenSnaps = await Promise.all(adminsSnap.docs.map((adminDoc) => adminDoc.ref.collection('tokens').get()));
+
+    const batch = db.batch();
+    const tokens: string[] = [];
+
+    for (let i = 0; i < adminsSnap.docs.length; i++) {
+        const adminDoc = adminsSnap.docs[i];
+        const snap = tokenSnaps[i];
+
+        batch.set(adminDoc.ref.collection('notifications').doc(), {
+            title,
+            body,
+            type: 'security_alert_mock_location',
+            created_at: admin.firestore.FieldValue.serverTimestamp(),
+            is_read: false,
+            read_at: null,
+            actor_uid: userId,
+            location_id: locationId
+        });
+
+        for (const tokenDoc of snap.docs) {
+            const token = (tokenDoc.data() as { token?: string }).token;
+            if (token) tokens.push(token);
+        }
+    }
+
+    await batch.commit();
+
+    if (tokens.length > 0) {
+        await admin.messaging().sendEachForMulticast({
+            tokens,
+            notification: { title, body },
+            data: {
+                type: 'security_alert_mock_location',
+                companyId,
+                userId,
+                locationId
+            }
+        });
+    }
+}
+
 export const generateQrToken = onCall({ secrets: [QR_SIGNING_SECRET] }, async (request) => {
     assertAuthed(request.auth);
     assertAdmin(request.auth);
@@ -155,6 +216,76 @@ export const generateQrToken = onCall({ secrets: [QR_SIGNING_SECRET] }, async (r
     return { token, expiresInMinutes: refreshMinutes };
 });
 
+export const forceRotateQrToken = onCall({ secrets: [QR_SIGNING_SECRET] }, async (request) => {
+    assertAuthed(request.auth);
+    assertAdmin(request.auth);
+
+    const { companyId, locationId, reason } = request.data as {
+        companyId?: string;
+        locationId?: string;
+        reason?: string;
+    };
+
+    if (!companyId || !locationId) {
+        throw new HttpsError('invalid-argument', 'companyId and locationId are required.');
+    }
+
+    const companyRef = db.collection('companies').doc(companyId);
+    const [companySnap, locationSnap] = await Promise.all([
+        companyRef.get(),
+        companyRef.collection('locations').doc(locationId).get()
+    ]);
+
+    if (!companySnap.exists) {
+        throw new HttpsError('not-found', 'Company not found.');
+    }
+    if (!locationSnap.exists) {
+        throw new HttpsError('not-found', 'Location not found.');
+    }
+
+    const company = companySnap.data() as { qr_refresh_interval?: number };
+    const refreshMinutes = company.qr_refresh_interval ?? 15;
+
+    const token = jwt.sign(
+        {
+            companyId,
+            locationId
+        } as QrPayload,
+        QR_SIGNING_SECRET.value(),
+        { algorithm: 'HS256', expiresIn: `${refreshMinutes}m` }
+    );
+
+    const payloadHash = crypto.createHash('sha256').update(token).digest('hex');
+    await companyRef.collection('qr_codes').doc(locationId).set(
+        {
+            payload_hash: payloadHash,
+            issued_at: admin.firestore.FieldValue.serverTimestamp(),
+            expires_at: admin.firestore.Timestamp.fromDate(new Date(Date.now() + refreshMinutes * 60_000)),
+            is_active: true,
+            force_rotated_at: admin.firestore.FieldValue.serverTimestamp(),
+            rotated_by_uid: request.auth.uid,
+            rotation_reason: reason ?? null
+        },
+        { merge: true }
+    );
+
+    await companyRef.collection('audit_log').add({
+        action: 'qr_force_rotated',
+        performed_by_uid: request.auth.uid,
+        target_collection: 'qr_codes',
+        target_id: locationId,
+        old_value: null,
+        new_value: {
+            location_id: locationId,
+            force_rotated: true,
+            rotation_reason: reason ?? null
+        },
+        timestamp: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    return { ok: true, token, expiresInMinutes: refreshMinutes };
+});
+
 export const checkIn = onCall({ secrets: [QR_SIGNING_SECRET] }, async (request) => {
     assertAuthed(request.auth);
 
@@ -182,6 +313,35 @@ export const checkIn = onCall({ secrets: [QR_SIGNING_SECRET] }, async (request) 
     }
 
     if (isMockLocation === true) {
+        const companyRef = db.collection('companies').doc(companyId);
+        const scanLogRef = companyRef.collection('qr_scan_log').doc();
+
+        await scanLogRef.set({
+            user_id: uid,
+            qr_code_id: locationId,
+            scanned_at: admin.firestore.FieldValue.serverTimestamp(),
+            gps_lat: latitude,
+            gps_lng: longitude,
+            distance_m: null,
+            success: false,
+            failure_reason: 'mock_location_detected'
+        });
+
+        await companyRef.collection('audit_log').add({
+            action: 'mock_location_checkin_blocked',
+            performed_by_uid: uid,
+            target_collection: 'qr_scan_log',
+            target_id: scanLogRef.id,
+            old_value: null,
+            new_value: {
+                user_id: uid,
+                location_id: locationId,
+                failure_reason: 'mock_location_detected'
+            },
+            timestamp: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        await notifyAdminsMockLocationAttempt({ companyId, userId: uid, locationId });
         throw new HttpsError('permission-denied', 'Mock location detected.');
     }
 
@@ -197,14 +357,21 @@ export const checkIn = onCall({ secrets: [QR_SIGNING_SECRET] }, async (request) 
     }
 
     const companyRef = db.collection('companies').doc(companyId);
-    const [companySnap, locationSnap, userSnap] = await Promise.all([
+    const [companySnap, locationSnap, qrCodeSnap, userSnap] = await Promise.all([
         companyRef.get(),
         companyRef.collection('locations').doc(locationId).get(),
+        companyRef.collection('qr_codes').doc(locationId).get(),
         db.collection('users').doc(uid).get()
     ]);
 
-    if (!companySnap.exists || !locationSnap.exists || !userSnap.exists) {
+    if (!companySnap.exists || !locationSnap.exists || !userSnap.exists || !qrCodeSnap.exists) {
         throw new HttpsError('not-found', 'Required company/location/user records missing.');
+    }
+
+    const qrCode = qrCodeSnap.data() as { payload_hash?: string; is_active?: boolean };
+    const incomingHash = crypto.createHash('sha256').update(qrToken).digest('hex');
+    if (qrCode.is_active !== true || !qrCode.payload_hash || qrCode.payload_hash !== incomingHash) {
+        throw new HttpsError('failed-precondition', 'QR code expired, rotated, or invalid. Please scan again.');
     }
 
     const company = companySnap.data() as { proximity_radius_m?: number };
@@ -590,3 +757,94 @@ export const onUserDeactivateRejectPendingLeave = onDocumentUpdated('users/{uid}
 
     await batch.commit();
 });
+
+export const onAdminDeactivationGuardLastAdmin = onDocumentUpdated('users/{uid}', async (event) => {
+    const before = event.data?.before.data() as
+        | {
+            is_active?: boolean;
+            company_id?: string;
+            role?: Role;
+        }
+        | undefined;
+    const after = event.data?.after.data() as
+        | {
+            is_active?: boolean;
+            company_id?: string;
+            role?: Role;
+        }
+        | undefined;
+    const uid = event.params.uid;
+
+    if (!before || !after) return;
+    if (before.is_active !== true || after.is_active !== false) return;
+    if (before.role !== 'admin' || !after.company_id) return;
+
+    const activeAdminQuery = await db
+        .collection('users')
+        .where('company_id', '==', after.company_id)
+        .where('role', '==', 'admin')
+        .where('is_active', '==', true)
+        .limit(1)
+        .get();
+
+    if (!activeAdminQuery.empty) return;
+
+    const userRef = db.collection('users').doc(uid);
+    const companyRef = db.collection('companies').doc(after.company_id);
+
+    await userRef.update({
+        is_active: true,
+        updated_at: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    await companyRef.collection('audit_log').add({
+        action: 'last_admin_deactivation_blocked',
+        performed_by_uid: 'system',
+        target_collection: 'users',
+        target_id: uid,
+        old_value: { is_active: false },
+        new_value: { is_active: true },
+        timestamp: admin.firestore.FieldValue.serverTimestamp()
+    });
+});
+
+export const onLeaveDecisionGuardSelfApproval = onDocumentUpdated(
+    'companies/{companyId}/leave_requests/{requestId}',
+    async (event) => {
+        const before = event.data?.before.data() as
+            | {
+                user_id?: string;
+                status?: string;
+                approved_by?: string;
+            }
+            | undefined;
+        const after = event.data?.after.data() as
+            | {
+                user_id?: string;
+                status?: string;
+                approved_by?: string;
+            }
+            | undefined;
+
+        if (!before || !after || !after.user_id) return;
+
+        const becameDecision = before.status == 'pending' && (after.status == 'approved' || after.status == 'rejected');
+        if (!becameDecision) return;
+
+        if (after.approved_by !== after.user_id) return;
+
+        const companyRef = db.collection('companies').doc(event.params.companyId);
+
+        await event.data?.after.ref.set(before, { merge: false });
+
+        await companyRef.collection('audit_log').add({
+            action: 'leave_self_approval_blocked',
+            performed_by_uid: 'system',
+            target_collection: 'leave_requests',
+            target_id: event.params.requestId,
+            old_value: after,
+            new_value: before,
+            timestamp: admin.firestore.FieldValue.serverTimestamp()
+        });
+    }
+);

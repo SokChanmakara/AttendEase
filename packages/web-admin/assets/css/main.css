@@ -1,0 +1,125 @@
+/* Design Tokens: Editorial Dark — Refined Utilitarian */
+:root {
+  /* Colors */
+  --background: #0F0F0F;
+  --surface: #161616;
+  --sidebar: #111111;
+  --border: #252525;
+  --sidebar-border: #2a2a2a;
+  
+  --accent: #C9A84C; /* Gold */
+  --foreground: #F5F5F5;
+  --muted-foreground: #6b6b6b;
+  
+  --status-green: #22c55e;
+  --status-amber: #f59e0b;
+  --status-red: #ef4444;
+
+  /* Typography */
+  --font-display: "DM Serif Display", serif;
+  --font-mono: "IBM Plex Mono", monospace;
+  --font-sans: "Inter", system-ui, sans-serif;
+  
+  /* Spacing & Sizes */
+  --sidebar-width: 220px;
+  --radius: 8px;
+  --radius-sm: 4px;
+  
+  /* Animation */
+  --transition-base: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Global Reset & Base Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-size: 13px; /* As per design prompt for body */
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+}
+
+/* 1px Gold Top Accent Bar */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background-color: var(--accent);
+  z-index: 10000;
+}
+
+h1, h2, h3, h4, .display-serif {
+  font-family: var(--font-display);
+  font-weight: 400; /* DM Serif Display weight is usually 400 */
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+  transition: var(--transition-base);
+}
+
+/* Utility Classes */
+.text-subtle {
+  color: var(--muted-foreground);
+}
+
+.text-accent {
+  color: var(--accent);
+}
+
+.small-caps {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* Status Badges */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.status-present { background: rgba(34, 197, 94, 0.15); color: var(--status-green); }
+.status-pending { background: rgba(245, 158, 11, 0.15); color: var(--status-amber); }
+.status-absent { background: rgba(239, 68, 68, 0.15); color: var(--status-red); }
+
+/* Scrollbar Styles */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}

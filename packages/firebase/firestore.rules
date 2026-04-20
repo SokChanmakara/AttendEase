@@ -9,63 +9,158 @@ service cloud.firestore {
       return isAuthed() ? request.auth.token.role : null;
     }
 
+    function companyIdClaim() {
+      return isAuthed() ? request.auth.token.company_id : null;
+    }
+
+    function isSelf(uid) {
+      return isAuthed() && request.auth.uid == uid;
+    }
+
+    function isInCompany(companyId) {
+      return isAuthed() && companyIdClaim() == companyId;
+    }
+
     function isAdmin() {
       return role() == 'admin';
     }
 
+    function isManager() {
+      return role() == 'manager';
+    }
+
+    function isManagerOrAdmin() {
+      return isManager() || isAdmin();
+    }
+
+    function userCompany(uid) {
+      return get(/databases/$(database)/documents/users/$(uid)).data.company_id;
+    }
+
     match /users/{uid} {
-      allow read: if isAuthed() && (request.auth.uid == uid || isAdmin());
-      allow update: if isAuthed() && request.auth.uid == uid;
-      allow create, delete: if isAdmin();
+      allow read: if isSelf(uid)
+                  || (isManagerOrAdmin() && resource.data.company_id == companyIdClaim());
+
+      allow create: if isAdmin()
+                    && request.resource.data.company_id == companyIdClaim();
+
+      allow update: if (
+                      isSelf(uid)
+                      && request.resource.data.company_id == resource.data.company_id
+                      && request.resource.data.role == resource.data.role
+                      && request.resource.data.is_active == resource.data.is_active
+                    )
+                    || (
+                      isAdmin()
+                      && resource.data.company_id == companyIdClaim()
+                      && request.resource.data.company_id == companyIdClaim()
+                    );
+
+      allow delete: if isAdmin() && resource.data.company_id == companyIdClaim();
 
       match /notifications/{notifId} {
-        allow read, write: if isAuthed() && request.auth.uid == uid;
+        allow read, write: if isSelf(uid);
       }
 
       match /tokens/{tokenId} {
-        allow read, write: if isAuthed() && request.auth.uid == uid;
+        allow read, write: if isSelf(uid);
       }
 
       match /leave_balances/{balanceId} {
-        allow read: if isAuthed() && (request.auth.uid == uid || isAdmin());
-        allow write: if isAdmin();
+        allow read: if isSelf(uid)
+                    || (isManagerOrAdmin() && userCompany(uid) == companyIdClaim());
+        allow write: if false;
       }
     }
 
     match /companies/{companyId} {
-      allow read: if isAuthed();
-      allow write: if isAdmin();
+      allow read: if isInCompany(companyId);
+      allow write: if isAdmin() && isInCompany(companyId);
+
+      match /locations/{locationId} {
+        allow read: if isInCompany(companyId);
+        allow write: if isAdmin() && isInCompany(companyId);
+      }
+
+      match /departments/{departmentId} {
+        allow read: if isInCompany(companyId);
+        allow write: if isAdmin() && isInCompany(companyId);
+      }
+
+      match /leave_types/{typeId} {
+        allow read: if isInCompany(companyId);
+        allow write: if isAdmin() && isInCompany(companyId);
+      }
+
+      match /notification_settings/{type} {
+        allow read: if isInCompany(companyId);
+        allow write: if isAdmin() && isInCompany(companyId);
+      }
+
+      match /qr_codes/{locationId} {
+        allow read: if isInCompany(companyId);
+        allow write: if false;
+      }
 
       match /attendance/{recordId} {
-        allow read: if isAuthed();
+        allow read: if isInCompany(companyId)
+                    && (
+                      isManagerOrAdmin()
+                      || resource.data.user_id == request.auth.uid
+                    );
         allow write: if false;
       }
 
       match /qr_scan_log/{logId} {
-        allow read: if isAdmin();
+        allow read: if isInCompany(companyId) && isManagerOrAdmin();
         allow write: if false;
       }
 
       match /audit_log/{logId} {
-        allow read: if isAdmin();
+        allow read: if isInCompany(companyId) && isAdmin();
         allow write: if false;
       }
 
       match /notification_log/{logId} {
-        allow read: if isAdmin();
+        allow read: if isInCompany(companyId) && isAdmin();
         allow write: if false;
       }
 
       match /leave_requests/{requestId} {
-        allow read: if isAuthed();
-        allow create: if role() in ['employee', 'manager', 'admin'];
-        allow update: if role() in ['manager', 'admin'];
+        allow read: if isInCompany(companyId)
+                    && (
+                      isManagerOrAdmin()
+                      || resource.data.user_id == request.auth.uid
+                    );
+
+        allow create: if isInCompany(companyId)
+                      && role() in ['employee', 'manager', 'admin']
+                      && request.resource.data.user_id == request.auth.uid
+                      && request.resource.data.status == 'pending';
+
+        allow update: if isInCompany(companyId)
+                      && isManagerOrAdmin()
+                      && resource.data.user_id != request.auth.uid
+                      && resource.data.status == 'pending'
+                      && request.resource.data.status in ['approved', 'rejected']
+                      && request.resource.data.approved_by == request.auth.uid
+                      && request.resource.data.diff(resource.data).changedKeys().hasOnly([
+                        'status',
+                        'approved_by',
+                        'decided_at',
+                        'rejection_reason'
+                      ]);
+
+        allow delete: if false;
       }
 
       match /{document=**} {
-        allow read: if isAuthed();
-        allow write: if isAdmin();
+        allow read, write: if false;
       }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
