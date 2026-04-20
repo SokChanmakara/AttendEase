@@ -848,3 +848,54 @@ export const onLeaveDecisionGuardSelfApproval = onDocumentUpdated(
         });
     }
 );
+
+export const generateEmployeeLoginToken = onCall(async (request) => {
+    assertAuthed(request.auth);
+    assertAdmin(request.auth);
+
+    const { targetUid, companyId } = request.data as { targetUid?: string; companyId?: string };
+    if (!targetUid || !companyId) {
+        throw new HttpsError('invalid-argument', 'targetUid and companyId are required.');
+    }
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    await db.collection('auth_tokens').doc(token).set({
+        user_id: targetUid,
+        company_id: companyId,
+        expires_at: admin.firestore.Timestamp.fromDate(expiresAt),
+        used: false,
+        created_at: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    return { token, expiresAt: expiresAt.toISOString() };
+});
+
+export const exchangeEmployeeLoginToken = onCall(async (request) => {
+    const { token } = request.data as { token?: string };
+    if (!token) {
+        throw new HttpsError('invalid-argument', 'token is required.');
+    }
+
+    const tokenRef = db.collection('auth_tokens').doc(token);
+    const tokenSnap = await tokenRef.get();
+
+    if (!tokenSnap.exists) {
+        throw new HttpsError('not-found', 'Invalid or expired token.');
+    }
+
+    const data = tokenSnap.data() as { user_id: string; expires_at: admin.firestore.Timestamp; used: boolean };
+
+    if (data.used || data.expires_at.toDate() < new Date()) {
+        throw new HttpsError('failed-precondition', 'Token has already been used or has expired.');
+    }
+
+    await tokenRef.update({ 
+        used: true, 
+        exchanged_at: admin.firestore.FieldValue.serverTimestamp() 
+    });
+
+    const customToken = await admin.auth().createCustomToken(data.user_id);
+    return { customToken };
+});

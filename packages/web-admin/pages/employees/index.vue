@@ -36,7 +36,10 @@
             </span>
           </td>
           <td>
-            <BaseButton variant="ghost" @click="editUser(user)">Edit</BaseButton>
+            <div class="action-btns">
+              <BaseButton variant="ghost" @click="editUser(user)">Edit</BaseButton>
+              <BaseButton variant="ghost" @click="openQrModal(user)">Login QR</BaseButton>
+            </div>
           </td>
         </tr>
         <tr v-if="filteredUsers.length === 0">
@@ -78,18 +81,48 @@
         </form>
       </BaseCard>
     </div>
+
+    <!-- Login QR Modal -->
+    <div v-if="showQrModal" class="modal-overlay" @click.self="showQrModal = false">
+      <BaseCard class="qr-modal-card">
+        <template #header>
+          <h3 class="display-serif">Employee Secure Login</h3>
+        </template>
+        
+        <div class="qr-content" v-if="qrToken">
+          <div class="qr-container">
+            <qrcode-vue :value="`AE_AUTH:${qrToken}`" :size="240" level="H" background="#ffffff" foreground="#000000" />
+          </div>
+          <div class="qr-info">
+            <p class="mono-label">ONE-TIME LOGIN TOKEN</p>
+            <p class="text-subtle small">This QR code is valid for 10 minutes. The employee can scan this on the login screen to authenticate securely.</p>
+          </div>
+        </div>
+        <div v-else class="qr-loading">
+          <p>Generating secure token...</p>
+        </div>
+
+        <template #footer>
+          <BaseButton variant="ghost" @click="showQrModal = false" style="width: 100%">Close</BaseButton>
+        </template>
+      </BaseCard>
+    </div>
   </div>
 </template>
 
 
 <script setup lang="ts">
 import { collection, query, getDocs, where } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
+import QrcodeVue from 'qrcode.vue';
 
-const { db } = useFirebase();
+const { db, functions } = useFirebase();
 
 const users = ref<any[]>([]);
 const searchQuery = ref('');
 const showAddModal = ref(false);
+const showQrModal = ref(false);
+const qrToken = ref<string | null>(null);
 const editingId = ref<string | null>(null);
 const saving = ref(false);
 
@@ -106,7 +139,6 @@ const formData = ref({
 const loadUsers = async () => {
   try {
     const usersRef = collection(db, 'users');
-    // In real app, we might filter by company_id
     const snapshot = await getDocs(usersRef);
     users.value = snapshot.docs.map(doc => ({
       id: doc.id,
@@ -116,9 +148,29 @@ const loadUsers = async () => {
       lastName: doc.data().last_name,
       isActive: doc.data().is_active ?? true,
       startDate: doc.data().start_date,
+      companyId: doc.data().company_id,
     }));
   } catch (e) {
     console.error('Failed to load users:', e);
+  }
+};
+
+const openQrModal = async (user: any) => {
+  qrToken.value = null;
+  showQrModal.value = true;
+  
+  try {
+    const generateFunc = httpsCallable(functions, 'generateEmployeeLoginToken');
+    const res = await generateFunc({
+      targetUid: user.id,
+      companyId: user.companyId || 'acme'
+    }) as any;
+    
+    qrToken.value = res.data.token;
+  } catch (e) {
+    console.error('Failed to generate QR token:', e);
+    alert('Failed to generate secure token. Ensure you have admin permissions.');
+    showQrModal.value = false;
   }
 };
 
@@ -134,7 +186,6 @@ const filteredUsers = computed(() => {
 const saveEmployee = async () => {
   saving.value = true;
   try {
-    // This would typically call a Cloud Function to handle user creation in Admin Auth
     console.log('Saving employee:', formData.value);
     alert('In a real environment, this would call a Cloud Function to create the Firebase Auth user and Firestore record.');
     showAddModal.value = false;
@@ -245,6 +296,45 @@ onMounted(loadUsers);
   max-width: 600px;
 }
 
+.qr-modal-card {
+  width: 100%;
+  max-width: 400px;
+}
+
+.qr-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  padding: 2rem 0;
+}
+
+.qr-container {
+  padding: 1.5rem;
+  background: white;
+  border-radius: 8px;
+}
+
+.qr-info {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.mono-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+}
+
+.qr-loading {
+  padding: 4rem 0;
+  text-align: center;
+  color: var(--muted-foreground);
+}
+
 .employee-form {
   display: flex;
   flex-direction: column;
@@ -263,4 +353,10 @@ onMounted(loadUsers);
   gap: 1rem;
   margin-top: 1rem;
 }
+
+.action-btns {
+  display: flex;
+  gap: 0.5rem;
+}
 </style>
+
