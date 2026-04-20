@@ -10,6 +10,8 @@
     "dev:web": "npm run dev -w @attendease/web-admin",
     "build:web": "npm run build -w @attendease/web-admin",
     "build:functions": "npm run build -w @attendease/firebase-functions",
-    "serve:functions": "npm run serve -w @attendease/firebase-functions"
+    "serve:functions": "npm run serve -w @attendease/firebase-functions",
+    "bootstrap:admin": "npm run bootstrap:admin -w @attendease/firebase-functions --",
+    "seed:company": "npm run seed:company -w @attendease/firebase-functions --"
   }
 }

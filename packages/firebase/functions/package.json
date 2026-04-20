@@ -8,7 +8,9 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "build:watch": "tsc -w -p tsconfig.json",
-    "serve": "firebase emulators:start --only functions,firestore"
+    "serve": "firebase emulators:start --only functions,firestore",
+    "bootstrap:admin": "node scripts/bootstrap-admin.mjs",
+    "seed:company": "node scripts/seed-company.mjs"
   },
   "dependencies": {
     "firebase-admin": "^12.7.0",

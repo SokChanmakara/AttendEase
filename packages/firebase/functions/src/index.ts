@@ -13,6 +13,10 @@ const QR_SIGNING_SECRET = defineSecret('QR_SIGNING_SECRET');
 
 type Role = 'admin' | 'manager' | 'employee';
 
+function isRole(value: unknown): value is Role {
+    return value === 'admin' || value === 'manager' || value === 'employee';
+}
+
 interface QrPayload {
     companyId: string;
     locationId: string;
@@ -31,6 +35,43 @@ function assertAdmin(auth: { token?: { role?: Role } }): void {
         throw new HttpsError('permission-denied', 'Admin role required.');
     }
 }
+
+export const setUserClaims = onCall(async (request) => {
+    assertAuthed(request.auth);
+    assertAdmin(request.auth);
+
+    const { uid, role, companyId } = request.data as {
+        uid?: string;
+        role?: Role;
+        companyId?: string;
+    };
+
+    if (!uid || !role || !companyId) {
+        throw new HttpsError('invalid-argument', 'uid, role, and companyId are required.');
+    }
+    if (!isRole(role)) {
+        throw new HttpsError('invalid-argument', 'role must be one of: admin, manager, employee.');
+    }
+
+    await admin.auth().setCustomUserClaims(uid, {
+        role,
+        company_id: companyId
+    });
+
+    await db
+        .collection('users')
+        .doc(uid)
+        .set(
+            {
+                role,
+                company_id: companyId,
+                updated_at: admin.firestore.FieldValue.serverTimestamp()
+            },
+            { merge: true }
+        );
+
+    return { ok: true, uid, role, companyId };
+});
 
 function haversineDistanceMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
     const toRad = (v: number): number => (v * Math.PI) / 180;

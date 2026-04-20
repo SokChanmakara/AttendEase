@@ -27,6 +27,18 @@ From repo root:
 3. Deploy from `packages/firebase`:
    - `firebase deploy --only firestore:rules,storage,functions`
 
+## Auth claims bootstrap + initial seed
+
+Before running bootstrap commands, authenticate with Firebase Admin credentials (for example by setting `GOOGLE_APPLICATION_CREDENTIALS`).
+
+1. Bootstrap company + first admin (creates auth user, sets custom claims, writes `users/{uid}`):
+   - `npm run bootstrap:admin -- --companyId=acme --companyName="Acme Co" --email=admin@acme.com --password="ChangeMe123!" --firstName=System --lastName=Admin --timezone=UTC`
+
+2. Seed initial company data (`locations`, `departments`, `leave_types`, `notification_settings`):
+   - `npm run seed:company -- --companyId=acme --locationId=hq --locationName="HQ" --locationLat=11.5564 --locationLng=104.9282`
+
+3. Optional: update role claims from app/backend via callable `setUserClaims` in [packages/firebase/functions/src/index.ts](packages/firebase/functions/src/index.ts).
+
 ## Flutter setup
 
 - Install Flutter + Melos
