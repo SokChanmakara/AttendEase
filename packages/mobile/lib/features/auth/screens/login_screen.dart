@@ -88,7 +88,7 @@ class LoginScreen extends StatelessWidget {
                     );
                   },
                   style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: AppColors.border),
+                    side: BorderSide(color: AppColors.border),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(4),
                     ),
@@ -135,10 +135,10 @@ class LoginScreen extends StatelessWidget {
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: Theme.of(context).textTheme.bodyMedium,
-            enabledBorder: const UnderlineInputBorder(
+            enabledBorder: UnderlineInputBorder(
               borderSide: BorderSide(color: AppColors.border),
             ),
-            focusedBorder: const UnderlineInputBorder(
+            focusedBorder: UnderlineInputBorder(
               borderSide: BorderSide(color: AppColors.accent),
             ),
           ),

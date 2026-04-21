@@ -51,6 +51,7 @@ class ProfileScreen extends StatelessWidget {
             Divider(color: AppColors.border),
             const SizedBox(height: 24),
             
+            _buildThemeSwitch(context),
             _buildActionItem(context, 'CHANGE PASSWORD', Icons.vpn_key_outlined),
             _buildActionItem(context, 'PRIVACY POLICY', Icons.shield_outlined),
             _buildActionItem(context, 'SUPPORT', Icons.help_outline),
@@ -62,7 +63,7 @@ class ProfileScreen extends StatelessWidget {
               child: OutlinedButton(
                 onPressed: () {},
                 style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: AppColors.statusRed),
+                  side: const BorderSide(color: AppColors.statusRed),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
                 child: Text(
@@ -123,6 +124,38 @@ class ProfileScreen extends StatelessWidget {
             Icon(Icons.chevron_right, size: 16, color: AppColors.textMuted),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildThemeSwitch(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24.0),
+      child: Row(
+        children: [
+          Icon(Icons.dark_mode_outlined, size: 20, color: AppColors.accent),
+          const SizedBox(width: 20),
+          Text(
+            'DARK MODE',
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const Spacer(),
+          ValueListenableBuilder<ThemeMode>(
+            valueListenable: appThemeMode,
+            builder: (context, currentMode, _) {
+              return Switch(
+                value: currentMode == ThemeMode.dark,
+                activeTrackColor: AppColors.accent.withOpacity(0.5),
+                activeThumbColor: AppColors.accent,
+                onChanged: (value) {
+                  appThemeMode.value = value ? ThemeMode.dark : ThemeMode.light;
+                },
+              );
+            },
+          ),
+        ],
       ),
     );
   }

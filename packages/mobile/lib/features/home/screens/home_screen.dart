@@ -15,7 +15,7 @@ class HomeScreen extends StatelessWidget {
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.notifications_none, size: 20),
+            icon: const Icon(Icons.notifications_none, size: 20),
             onPressed: () {},
           ),
           const SizedBox(width: 16),
@@ -100,7 +100,7 @@ class HomeScreen extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.qr_code_scanner, color: Colors.black),
+                      const Icon(Icons.qr_code_scanner, color: Colors.black),
                       const SizedBox(width: 12),
                       Text(
                         'SCAN TO CHECK OUT',

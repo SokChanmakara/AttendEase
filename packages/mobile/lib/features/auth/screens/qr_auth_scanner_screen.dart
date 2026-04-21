@@ -88,7 +88,7 @@ class _QrAuthScannerScreenState extends State<QrAuthScannerScreen> {
           if (_isProcessing)
             Container(
               color: Colors.black54,
-              child: const Center(
+              child: Center(
                 child: CircularProgressIndicator(color: AppColors.accent),
               ),
             ),
@@ -120,7 +120,7 @@ class QrScannerOverlayShape extends ShapeBorder {
   final double borderLength;
   final double cutOutSize;
 
-  QrScannerOverlayShape({
+  const QrScannerOverlayShape({
     this.borderColor = Colors.white,
     this.borderWidth = 1.0,
     this.borderRadius = 0,

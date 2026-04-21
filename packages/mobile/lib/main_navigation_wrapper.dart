@@ -34,7 +34,7 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
         children: _screens,
       ),
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           border: Border(
             top: BorderSide(color: AppColors.border, width: 1),
           ),
@@ -42,7 +42,7 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
         child: BottomNavigationBar(
           currentIndex: _selectedIndex,
           onTap: _onItemTapped,
-          items: [
+          items: const [
             BottomNavigationBarItem(
               icon: Icon(Icons.dashboard_outlined, size: 20),
               label: 'DASHBOARD',

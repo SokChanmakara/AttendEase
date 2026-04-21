@@ -12,16 +12,23 @@ class AttendEaseApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'AttendEase',
-      theme: AppTheme.darkTheme,
-      // For demonstration, starting at Login. 
-      // In real app, check auth state.
-      home: const LoginScreen(),
-      routes: {
-        '/login': (context) => const LoginScreen(),
-        '/home': (context) => const MainNavigationWrapper(),
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: appThemeMode,
+      builder: (context, currentMode, child) {
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'AttendEase',
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: currentMode,
+          // For demonstration, starting at Login. 
+          // In real app, check auth state.
+          home: const LoginScreen(),
+          routes: {
+            '/login': (context) => const LoginScreen(),
+            '/home': (context) => const MainNavigationWrapper(),
+          },
+        );
       },
     );
   }
