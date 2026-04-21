@@ -23,3 +23,7 @@ packages/firebase/functions/lib/
 *.env.*
 !.env.example
 .secret
+
+# Firebase generated config
+packages/mobile/lib/firebase_options.dart
+
