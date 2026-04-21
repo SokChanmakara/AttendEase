@@ -42,7 +42,7 @@ class AppTheme {
         backgroundColor: bg,
         elevation: 0,
         centerTitle: false,
-        titleTextStyle: TextStyle(
+        titleTextStyle: GoogleFonts.outfit(
           color: textP,
           fontSize: 20,
           fontWeight: FontWeight.bold,
@@ -76,33 +76,33 @@ class AppTheme {
         onSurface: textP,
       ),
       textTheme: TextTheme(
-        displayLarge: GoogleFonts.dmSerifDisplay(
+        displayLarge: GoogleFonts.outfit(
           color: textP,
-          fontSize: 56,
+          fontSize: 48,
+          fontWeight: FontWeight.bold,
         ),
-        headlineMedium: GoogleFonts.dmSerifDisplay(
+        headlineMedium: GoogleFonts.outfit(
           color: textP,
-          fontSize: 28,
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
         ),
-        titleMedium: GoogleFonts.ibmPlexMono(
+        titleMedium: GoogleFonts.outfit(
           color: textM,
-          fontSize: 10,
+          fontSize: 14,
           fontWeight: FontWeight.w500,
-          letterSpacing: 1.5,
         ),
-        bodyLarge: GoogleFonts.inter(
+        bodyLarge: GoogleFonts.outfit(
           color: textP,
-          fontSize: 13,
+          fontSize: 16,
         ),
-        bodyMedium: GoogleFonts.inter(
+        bodyMedium: GoogleFonts.outfit(
           color: textM,
-          fontSize: 12,
+          fontSize: 14,
         ),
-        labelLarge: GoogleFonts.ibmPlexMono(
+        labelLarge: GoogleFonts.outfit(
           color: textP,
-          fontSize: 11,
+          fontSize: 14,
           fontWeight: FontWeight.w600,
-          letterSpacing: 1.0,
         ),
       ),
     );

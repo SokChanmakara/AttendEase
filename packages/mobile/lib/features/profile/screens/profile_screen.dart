@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/theme.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -8,10 +9,7 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'PROFILE',
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
+        title: Text('PROFILE', style: Theme.of(context).textTheme.titleMedium),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
@@ -41,36 +39,57 @@ class ProfileScreen extends StatelessWidget {
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 48),
-            
+
             // Info Cards
-            _buildSettingsItem(context, 'EMPLOYEE ID', 'EMP-0842', Icons.person_outline),
-            _buildSettingsItem(context, 'DEPARTMENT', 'ENGINEERING', Icons.business),
-            _buildSettingsItem(context, 'JOIN DATE', 'OCT 12, 2024', Icons.calendar_today),
-            
+            _buildSettingsItem(
+              context,
+              'EMPLOYEE ID',
+              'EMP-0842',
+              Icons.person_outline,
+            ),
+            _buildSettingsItem(
+              context,
+              'DEPARTMENT',
+              'ENGINEERING',
+              Icons.business,
+            ),
+            _buildSettingsItem(
+              context,
+              'JOIN DATE',
+              'OCT 12, 2024',
+              Icons.calendar_today,
+            ),
+
             const SizedBox(height: 24),
             Divider(color: AppColors.border),
             const SizedBox(height: 24),
-            
+
             _buildThemeSwitch(context),
-            _buildActionItem(context, 'CHANGE PASSWORD', Icons.vpn_key_outlined),
+            _buildActionItem(
+              context,
+              'CHANGE PASSWORD',
+              Icons.vpn_key_outlined,
+            ),
             _buildActionItem(context, 'PRIVACY POLICY', Icons.shield_outlined),
             _buildActionItem(context, 'SUPPORT', Icons.help_outline),
-            
+
             const SizedBox(height: 48),
-            
+
             SizedBox(
               width: double.infinity,
               child: OutlinedButton(
-                onPressed: () {},
+                onPressed: () async {
+                  await FirebaseAuth.instance.signOut();
+                },
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: AppColors.statusRed),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
                 child: Text(
                   'SIGN OUT',
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: AppColors.statusRed,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.labelLarge?.copyWith(color: AppColors.statusRed),
                 ),
               ),
             ),
@@ -80,7 +99,12 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSettingsItem(BuildContext context, String label, String value, IconData icon) {
+  Widget _buildSettingsItem(
+    BuildContext context,
+    String label,
+    String value,
+    IconData icon,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 24.0),
       child: Row(
@@ -90,14 +114,8 @@ class ProfileScreen extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                label,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              Text(
-                value,
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
+              Text(label, style: Theme.of(context).textTheme.titleMedium),
+              Text(value, style: Theme.of(context).textTheme.bodyLarge),
             ],
           ),
         ],
@@ -116,9 +134,9 @@ class ProfileScreen extends StatelessWidget {
             const SizedBox(width: 20),
             Text(
               label,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                fontWeight: FontWeight.w500,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w500),
             ),
             const Spacer(),
             Icon(Icons.chevron_right, size: 16, color: AppColors.textMuted),
@@ -137,9 +155,9 @@ class ProfileScreen extends StatelessWidget {
           const SizedBox(width: 20),
           Text(
             'DARK MODE',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              fontWeight: FontWeight.w500,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w500),
           ),
           const Spacer(),
           ValueListenableBuilder<ThemeMode>(
@@ -147,7 +165,7 @@ class ProfileScreen extends StatelessWidget {
             builder: (context, currentMode, _) {
               return Switch(
                 value: currentMode == ThemeMode.dark,
-                activeTrackColor: AppColors.accent.withOpacity(0.5),
+                activeTrackColor: AppColors.accent.withValues(alpha: 0.5),
                 activeThumbColor: AppColors.accent,
                 onChanged: (value) {
                   appThemeMode.value = value ? ThemeMode.dark : ThemeMode.light;

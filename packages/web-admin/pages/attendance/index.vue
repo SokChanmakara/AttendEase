@@ -5,7 +5,7 @@
     <BaseCard class="attendance-controls">
       <div class="filter-row">
         <BaseInput v-model="companyId" label="Company ID" placeholder="acme" />
-        <BaseInput label="Quick Search" placeholder="Search by name..." />
+        <BaseInput v-model="quickSearch" label="Quick Search" placeholder="Search by name or user ID..." />
       </div>
       <template #footer>
         <div class="controls-footer">
@@ -20,7 +20,7 @@
 
     <BaseCard class="attendance-list">
       <BaseTable :headers="['User', 'Location', 'Check-In', 'Check-Out', 'Status', 'Actions']">
-        <tr v-for="row in attendanceRows" :key="row.id">
+        <tr v-for="row in filteredRows" :key="row.id">
           <td>
             <div class="user-info">
               <span class="user-name">{{ row.userName || 'Unknown' }}</span>
@@ -41,7 +41,7 @@
             </BaseButton>
           </td>
         </tr>
-        <tr v-if="attendanceRows.length === 0">
+        <tr v-if="filteredRows.length === 0">
           <td colspan="6" class="empty-cell">No attendance records found.</td>
         </tr>
       </BaseTable>
@@ -82,6 +82,7 @@ import { httpsCallable } from 'firebase/functions';
 const { db, functions } = useFirebase();
 
 const companyId = ref('acme'); // Default for now
+const quickSearch = ref('');
 const attendanceRows = ref<any[]>([]);
 const loading = ref(false);
 const correcting = ref(false);
@@ -101,10 +102,12 @@ const refreshAttendance = async () => {
     
     attendanceRows.value = snapshot.docs.map(doc => ({
       id: doc.id,
-      ...doc.data(),
-      // Ensure ISO format for dates
-      checkInAtIso: (doc.data().check_in_at as any)?.toDate?.()?.toISOString() || doc.data().check_in_at,
-      checkOutAtIso: (doc.data().check_out_at as any)?.toDate?.()?.toISOString() || doc.data().check_out_at,
+      userId: doc.data().user_id || '',
+      userName: doc.data().user_name || '',
+      locationId: doc.data().location_id || '',
+      status: doc.data().status || '',
+      checkInAtIso: (doc.data().check_in_at as any)?.toDate?.()?.toISOString() || '',
+      checkOutAtIso: (doc.data().check_out_at as any)?.toDate?.()?.toISOString() || '',
     }));
   } catch (e) {
     console.error('Failed to load attendance:', e);
@@ -150,6 +153,14 @@ const formatDate = (iso: string) => {
   if (!iso) return '';
   return new Date(iso).toLocaleString();
 };
+
+const filteredRows = computed(() => {
+  const q = quickSearch.value.trim().toLowerCase();
+  if (!q) return attendanceRows.value;
+  return attendanceRows.value.filter((row) => {
+    return row.userName?.toLowerCase().includes(q) || row.userId?.toLowerCase().includes(q);
+  });
+});
 
 onMounted(() => {
   refreshAttendance();

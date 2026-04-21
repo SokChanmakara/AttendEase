@@ -26,6 +26,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>AttendEase uses the camera to scan QR codes for secure employee login and attendance check-in.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>AttendEase uses your location to verify you are at the approved work site when checking in.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

@@ -1,9 +1,57 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../../core/theme.dart';
 import 'qr_auth_scanner_screen.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isLoading = false;
+  String? _errorText;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _signIn() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    if (email.isEmpty || password.isEmpty) {
+      setState(() => _errorText = 'Email and password are required.');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorText = null;
+    });
+
+    try {
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+    } on FirebaseAuthException catch (e) {
+      setState(() => _errorText = e.message ?? 'Sign in failed.');
+    } catch (_) {
+      setState(() => _errorText = 'Sign in failed.');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,20 +75,36 @@ class LoginScreen extends StatelessWidget {
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 64),
-
-              _buildTextField(context, 'EMAIL ADDRESS', 'employee@acme.com'),
+              _buildTextField(
+                context,
+                controller: _emailController,
+                label: 'EMAIL ADDRESS',
+                hint: 'employee@acme.com',
+                keyboardType: TextInputType.emailAddress,
+              ),
               const SizedBox(height: 24),
-              _buildTextField(context, 'PASSWORD', '••••••••', obscure: true),
-
+              _buildTextField(
+                context,
+                controller: _passwordController,
+                label: 'PASSWORD',
+                hint: '••••••••',
+                obscure: true,
+              ),
+              if (_errorText != null) ...[
+                const SizedBox(height: 12),
+                Text(
+                  _errorText!,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: AppColors.statusRed),
+                ),
+              ],
               const SizedBox(height: 48),
-
               SizedBox(
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pushReplacementNamed(context, '/home');
-                  },
+                  onPressed: _isLoading ? null : _signIn,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.accent,
                     foregroundColor: Colors.black,
@@ -48,17 +112,24 @@ class LoginScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
-                  child: Text(
-                    'SIGN IN',
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: Colors.black,
-                    ),
-                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.black,
+                          ),
+                        )
+                      : Text(
+                          'SIGN IN',
+                          style: Theme.of(
+                            context,
+                          ).textTheme.labelLarge?.copyWith(color: Colors.black),
+                        ),
                 ),
               ),
-
               const SizedBox(height: 24),
-
               Row(
                 children: [
                   Expanded(child: Divider(color: AppColors.border)),
@@ -72,21 +143,21 @@ class LoginScreen extends StatelessWidget {
                   Expanded(child: Divider(color: AppColors.border)),
                 ],
               ),
-
               const SizedBox(height: 24),
-
               SizedBox(
                 width: double.infinity,
                 height: 56,
                 child: OutlinedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const QrAuthScannerScreen(),
-                      ),
-                    );
-                  },
+                  onPressed: _isLoading
+                      ? null
+                      : () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const QrAuthScannerScreen(),
+                            ),
+                          );
+                        },
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(color: AppColors.border),
                     shape: RoundedRectangleBorder(
@@ -100,12 +171,10 @@ class LoginScreen extends StatelessWidget {
                   ),
                 ),
               ),
-
               const SizedBox(height: 24),
-
               Center(
                 child: TextButton(
-                  onPressed: () {},
+                  onPressed: null,
                   child: Text(
                     'FORGOT PASSWORD?',
                     style: Theme.of(context).textTheme.titleMedium,
@@ -120,17 +189,23 @@ class LoginScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTextField(BuildContext context, String label, String hint, {bool obscure = false}) {
+  Widget _buildTextField(
+    BuildContext context, {
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    bool obscure = false,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
+        Text(label, style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
         TextField(
+          controller: controller,
           obscureText: obscure,
+          keyboardType: keyboardType,
           style: Theme.of(context).textTheme.bodyLarge,
           decoration: InputDecoration(
             hintText: hint,

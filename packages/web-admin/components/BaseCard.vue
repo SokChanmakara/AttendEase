@@ -37,7 +37,7 @@ defineProps({
 }
 
 .base-card:hover {
-  border-color: #3a3a3a;
+  border-color: #d1d1d1;
   transform: translateY(-1px);
 }
 

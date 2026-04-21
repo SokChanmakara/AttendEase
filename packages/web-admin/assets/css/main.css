@@ -1,19 +1,23 @@
-/* Design Tokens: Editorial Dark — Refined Utilitarian */
+/* Design Tokens: Editorial Light — Refined Utilitarian */
 :root {
   /* Colors */
-  --background: #0F0F0F;
-  --surface: #161616;
-  --sidebar: #111111;
-  --border: #252525;
-  --sidebar-border: #2a2a2a;
+  --background: #FAFAFA;
+  --surface: #FFFFFF;
+  --sidebar: #F5F5F5;
+  --border: #E5E5E5;
+  --sidebar-border: #E0E0E0;
   
-  --accent: #C9A84C; /* Gold */
-  --foreground: #F5F5F5;
+  --accent: #B08B2D; /* Gold */
+  --foreground: #111111;
   --muted-foreground: #6b6b6b;
   
-  --status-green: #22c55e;
-  --status-amber: #f59e0b;
-  --status-red: #ef4444;
+  --status-green: #16a34a;
+  --status-amber: #d97706;
+  --status-red: #dc2626;
+
+  --card: #FFFFFF;
+  --muted: #F8F8F8;
+  --error: #DC2626;
 
   /* Typography */
   --font-display: "DM Serif Display", serif;
@@ -102,9 +106,9 @@ a {
   letter-spacing: 0.05em;
 }
 
-.status-present { background: rgba(34, 197, 94, 0.15); color: var(--status-green); }
-.status-pending { background: rgba(245, 158, 11, 0.15); color: var(--status-amber); }
-.status-absent { background: rgba(239, 68, 68, 0.15); color: var(--status-red); }
+.status-present { background: rgba(22, 163, 74, 0.15); color: var(--status-green); }
+.status-pending { background: rgba(217, 119, 6, 0.15); color: var(--status-amber); }
+.status-absent { background: rgba(220, 38, 38, 0.15); color: var(--status-red); }
 
 /* Scrollbar Styles */
 ::-webkit-scrollbar {
@@ -116,7 +120,7 @@ a {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #333;
+  background: #E5E5E5;
   border-radius: 2px;
 }
 

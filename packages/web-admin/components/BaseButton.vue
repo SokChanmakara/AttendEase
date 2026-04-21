@@ -62,18 +62,18 @@ defineProps({
 /* Primary Variant */
 .variant-primary {
   background-color: var(--accent);
-  color: #000; /* Black text on gold is more editorial */
+  color: #fff; 
 }
 
 .variant-primary:hover:not(:disabled) {
-  background-color: #dcb85c;
+  background-color: #9c7a26;
   transform: translateY(-1px);
 }
 
 /* Secondary Variant */
 .variant-secondary {
   background-color: transparent;
-  border-color: #333;
+  border-color: #d1d1d1;
   color: var(--foreground);
 }
 
@@ -91,7 +91,7 @@ defineProps({
 
 .variant-ghost:hover:not(:disabled) {
   color: var(--foreground);
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: rgba(0, 0, 0, 0.05);
 }
 
 .spinner {

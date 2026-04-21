@@ -1,9 +1,119 @@
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import '../../../core/theme.dart';
 
-class ScannerScreen extends StatelessWidget {
+import '../../../core/theme.dart';
+import '../attendance_service.dart';
+
+class ScannerScreen extends StatefulWidget {
   const ScannerScreen({super.key});
+
+  @override
+  State<ScannerScreen> createState() => _ScannerScreenState();
+}
+
+class _ScannerScreenState extends State<ScannerScreen> {
+  bool _isProcessing = false;
+  String _statusText = 'ALIGN QR CODE WITHIN FRAME';
+  String _locationLabel = '-';
+
+  Future<void> _handleBarcode(String value) async {
+    if (_isProcessing) return;
+
+    final payload = AttendanceService.parseAttendanceQr(value);
+    if (payload == null) {
+      _showError('Invalid attendance QR.');
+      return;
+    }
+
+    setState(() {
+      _isProcessing = true;
+      _statusText = 'VALIDATING LOCATION...';
+      _locationLabel = payload.locationId;
+    });
+
+    try {
+      final employeeContext = await AttendanceService.loadEmployeeContext();
+      if (employeeContext.companyId != payload.companyId) {
+        throw FirebaseFunctionsException(
+          code: 'permission-denied',
+          message: 'Scanned QR belongs to a different company.',
+        );
+      }
+
+      final position = await _resolvePosition();
+      try {
+        await AttendanceService.checkOut(companyId: employeeContext.companyId);
+        _showSuccess('Checked out successfully.');
+      } on FirebaseFunctionsException catch (e) {
+        if (e.code != 'not-found') {
+          rethrow;
+        }
+        await AttendanceService.checkIn(
+          payload: payload,
+          latitude: position.latitude,
+          longitude: position.longitude,
+          accuracyM: position.accuracy,
+          isMockLocation: position.isMocked,
+        );
+        _showSuccess('Checked in successfully.');
+      }
+
+      if (mounted) {
+        Navigator.pop(context, true);
+      }
+    } on FirebaseFunctionsException catch (e) {
+      _showError(e.message ?? 'Attendance action failed.');
+    } catch (e) {
+      _showError(e.toString());
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+          _statusText = 'ALIGN QR CODE WITHIN FRAME';
+        });
+      }
+    }
+  }
+
+  Future<Position> _resolvePosition() async {
+    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      throw Exception('Location services are disabled.');
+    }
+
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      throw Exception('Location permission is required for attendance.');
+    }
+
+    return Geolocator.getCurrentPosition(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.best,
+        timeLimit: Duration(seconds: 12),
+      ),
+    );
+  }
+
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: AppColors.statusRed),
+    );
+  }
+
+  void _showSuccess(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: AppColors.statusGreen),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -13,15 +123,15 @@ class ScannerScreen extends StatelessWidget {
         children: [
           MobileScanner(
             onDetect: (capture) {
-              final List<Barcode> barcodes = capture.barcodes;
-              for (final barcode in barcodes) {
-                debugPrint('Barcode found! ${barcode.rawValue}');
-                // Handle successful scan
+              for (final barcode in capture.barcodes) {
+                final value = barcode.rawValue;
+                if (value != null && value.isNotEmpty) {
+                  _handleBarcode(value);
+                  break;
+                }
               }
             },
           ),
-          
-          // Overlay
           SafeArea(
             child: Column(
               children: [
@@ -36,17 +146,15 @@ class ScannerScreen extends StatelessWidget {
                       ),
                       Text(
                         'QR SCANNER',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: Colors.white,
-                        ),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.titleMedium?.copyWith(color: Colors.white),
                       ),
-                      const SizedBox(width: 48), // Spacer
+                      const SizedBox(width: 48),
                     ],
                   ),
                 ),
                 const Spacer(),
-                
-                // Scanner Frame
                 Container(
                   width: 260,
                   height: 260,
@@ -56,7 +164,6 @@ class ScannerScreen extends StatelessWidget {
                   ),
                   child: Stack(
                     children: [
-                      // Corner bits for precision look
                       _buildCorner(0, 0),
                       _buildCorner(1, 0),
                       _buildCorner(0, 1),
@@ -64,22 +171,21 @@ class ScannerScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-                
                 const SizedBox(height: 48),
                 Text(
-                  'ALIGN QR CODE WITHIN FRAME',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Colors.white,
-                  ),
+                  _statusText,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleMedium?.copyWith(color: Colors.white),
                 ),
                 const Spacer(),
-                
-                // Bottom Info
                 Container(
                   padding: const EdgeInsets.all(40),
                   decoration: const BoxDecoration(
                     color: Colors.black,
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(24),
+                    ),
                   ),
                   child: Column(
                     children: [
@@ -91,7 +197,7 @@ class ScannerScreen extends StatelessWidget {
                             style: Theme.of(context).textTheme.titleMedium,
                           ),
                           Text(
-                            'HQ MAN ENTRANCE',
+                            _locationLabel.toUpperCase(),
                             style: Theme.of(context).textTheme.labelLarge,
                           ),
                         ],
@@ -105,10 +211,9 @@ class ScannerScreen extends StatelessWidget {
                             style: Theme.of(context).textTheme.titleMedium,
                           ),
                           Text(
-                            'PRECISION-SCAN v2.1',
-                            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                              color: AppColors.accent,
-                            ),
+                            _isProcessing ? 'PROCESSING' : 'READY',
+                            style: Theme.of(context).textTheme.labelLarge
+                                ?.copyWith(color: AppColors.accent),
                           ),
                         ],
                       ),
@@ -118,6 +223,13 @@ class ScannerScreen extends StatelessWidget {
               ],
             ),
           ),
+          if (_isProcessing)
+            Container(
+              color: Colors.black38,
+              child: Center(
+                child: CircularProgressIndicator(color: AppColors.accent),
+              ),
+            ),
         ],
       ),
     );
