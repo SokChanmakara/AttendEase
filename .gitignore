@@ -17,6 +17,7 @@ packages/firebase/functions/lib/
 **/build/
 **/.flutter-plugins
 **/.flutter-plugins-dependencies
+*.iml
 
 # Env
 *.env
@@ -26,4 +27,3 @@ packages/firebase/functions/lib/
 
 # Firebase generated config
 packages/mobile/lib/firebase_options.dart
-

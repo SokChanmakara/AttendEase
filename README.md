@@ -1,12 +1,13 @@
 # AttendEase Monorepo
 
-Firebase-first scaffold from the architecture document.
+Firebase-first workspace with separate mobile, web admin, and Firebase packages.
 
 ## Structure
 
-- `packages/mobile` — Flutter app scaffold (Melos)
+- `packages/mobile` — Flutter application, including platform folders
 - `packages/web-admin` — Nuxt 3 admin app
-- `packages/firebase` — Firebase config, rules, functions
+- `packages/firebase` — Firebase config, rules, and Cloud Functions
+- repo root — workspace tooling (`pubspec.yaml`, `melos.yaml`, `package.json`)
 
 ## Use npm (JS/TS)
 
@@ -64,4 +65,11 @@ Before running bootstrap commands, authenticate with Firebase Admin credentials 
 
 - Install Flutter + Melos
 - Run `melos bootstrap` from repo root
-- Run app in `packages/mobile`
+- Run the Flutter app from `packages/mobile`
+
+Example:
+
+```bash
+cd packages/mobile
+flutter run
+```

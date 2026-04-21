@@ -1,0 +1,5 @@
+# This file configures the analyzer for the Flutter mobile app.
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:

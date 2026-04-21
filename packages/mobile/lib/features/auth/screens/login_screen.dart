@@ -8,113 +8,113 @@ class LoginScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(40.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Spacer(),
-            Text(
-              'AttendEase',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                color: AppColors.accent,
-                fontSize: 40,
-              ),
-            ),
-            Text(
-              'EMPLOYEE PORTAL',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 64),
-            
-            // Login Fields
-            _buildTextField(context, 'EMAIL ADDRESS', 'employee@acme.com'),
-            const SizedBox(height: 24),
-            _buildTextField(context, 'PASSWORD', '••••••••', obscure: true),
-            
-            const SizedBox(height: 48),
-            
-            // Login Button
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pushReplacementNamed(context, '/home');
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.accent,
-                  foregroundColor: Colors.black,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-                child: Text(
-                  'SIGN IN',
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: Colors.black,
-                  ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(40.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 24),
+              Text(
+                'AttendEase',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  color: AppColors.accent,
+                  fontSize: 40,
                 ),
               ),
-            ),
-            
-            const SizedBox(height: 24),
-            
-            Row(
-              children: [
-                Expanded(child: Divider(color: AppColors.border)),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+              Text(
+                'EMPLOYEE PORTAL',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 64),
+
+              _buildTextField(context, 'EMAIL ADDRESS', 'employee@acme.com'),
+              const SizedBox(height: 24),
+              _buildTextField(context, 'PASSWORD', '••••••••', obscure: true),
+
+              const SizedBox(height: 48),
+
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pushReplacementNamed(context, '/home');
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.accent,
+                    foregroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
                   child: Text(
-                    'OR',
+                    'SIGN IN',
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: Colors.black,
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              Row(
+                children: [
+                  Expanded(child: Divider(color: AppColors.border)),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      'OR',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ),
+                  Expanded(child: Divider(color: AppColors.border)),
+                ],
+              ),
+
+              const SizedBox(height: 24),
+
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const QrAuthScannerScreen(),
+                      ),
+                    );
+                  },
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppColors.border),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  icon: const Icon(Icons.qr_code_scanner, size: 20),
+                  label: Text(
+                    'LOGIN VIA QR CODE',
+                    style: Theme.of(context).textTheme.labelLarge,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              Center(
+                child: TextButton(
+                  onPressed: () {},
+                  child: Text(
+                    'FORGOT PASSWORD?',
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
-                Expanded(child: Divider(color: AppColors.border)),
-              ],
-            ),
-            
-            const SizedBox(height: 24),
-            
-            // QR Login Button
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const QrAuthScannerScreen()),
-                  );
-                },
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: AppColors.border),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-                icon: const Icon(Icons.qr_code_scanner, size: 20),
-                label: Text(
-                  'LOGIN VIA QR CODE',
-                  style: Theme.of(context).textTheme.labelLarge,
-                ),
               ),
-            ),
-            
-            const SizedBox(height: 24),
-            
-            Center(
-              child: TextButton(
-                onPressed: () {},
-                child: Text(
-                  'FORGOT PASSWORD?',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ),
-            ),
-            const Spacer(),
-          ],
+              const SizedBox(height: 24),
+            ],
+          ),
         ),
       ),
     );
